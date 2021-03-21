@@ -18,7 +18,7 @@ def init_logger():
     return logger
 
 
-def run(cmd, logger):
+def run_command(cmd, logger):
     logger.info("Command: {}".format(cmd))
     try:
         cproc = subprocess.run(cmd, check=True, capture_output=True)
@@ -42,7 +42,8 @@ def cli(debug):
 
 
 @cli.command()
-def launch():
+@click.option("--launch/--no-launch", default=False)
+def run(launch=False):
     logger = init_logger()
 
     # Establish script paths (relative to this script).
@@ -70,7 +71,7 @@ def launch():
     container_build_filename = devc_config["build"]["dockerfile"]
     container_build_path = os.path.join(devc_dir, container_build_filename)
     click.echo("Building container: {}".format(project_name))
-    pb_output = run(
+    pb_output = run_command(
         ["podman", "build", "-t", project_name, "-f", container_build_path, "."], logger
     )  # --build-arg
     image_id = pb_output.splitlines()[-1].decode("utf-8").strip()
@@ -79,10 +80,10 @@ def launch():
     click.echo(
         "Running new container (replacing existing if present)...".format(project_name)
     )
-    run(["podman", "stop", "--ignore", project_name], logger)
-    run(["podman", "rm", "--ignore", project_name], logger)
+    run_command(["podman", "stop", "--ignore", project_name], logger)
+    run_command(["podman", "rm", "--ignore", project_name], logger)
     # @TODO: Consider adding the :U option to --volume once supported in releases of Podman.
-    run(
+    run_command(
         [
             "podman",
             "run",
@@ -104,7 +105,7 @@ def launch():
         click.echo(
             "Running postCreateCommand: {}".format(devc_config["postCreateCommand"])
         )
-        run(
+        run_command(
             [
                 "podman",
                 "exec",
@@ -130,15 +131,30 @@ def launch():
         config.write(configfile, space_around_delimiters=False)
 
     # List forwarded ports.
-    ports = run(["podman", "port", project_name], logger).decode("utf-8").strip()
+    ports = (
+        run_command(["podman", "port", project_name], logger).decode("utf-8").strip()
+    )
     if len(ports) > 0:
         click.echo(
             "Container {} has the following ports forwarded:".format(project_name)
         )
-        click.echo(ports)
+        ports_linked = ports.replace("0.0.0.0:", "http://localhost:")
+        click.echo(ports_linked)
+        if launch:
+            click.echo("Launching forwarded ports as URLs.")
+            for line in ports_linked.splitlines():
+                parts = line.split("->")
+                url = parts[1].strip()
+                click.launch(url)
+        else:
+            click.echo(
+                "Click links above to launch them your default browser (or use --launch)."
+            )
     else:
         click.echo(
             "Container {} successfully created, but no ports are forwarded.".format(
                 project_name
             )
         )
+        if launch:
+            click.echo("Need at least one port forwarded to launch in browser.")

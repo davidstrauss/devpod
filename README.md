@@ -23,15 +23,14 @@ other IDE integrations.
 1. In the CLI, change to the parent directory of `.devcontainer` for your project.
 1. Run the utility (which will *delete* any container with the same name as your project directory):
 
-       devpod launch
+       devpod run --launch  # Will open a browser to forwarded ports.
 
-1. The `launch` command should list any open ports at the end of the process,
+### Troubleshooting
+
+* The `launch` command should list any open ports at the end of the process,
    but you can also list them using Podman directly:
    
        podman port --latest
-
-1. Connect using a Web browser. For example, if the output of `port` is
-   `80/tcp -> 0.0.0.0:12345`, then open a browser to `http://localhost:12345/`.
 
 ## Developing DevPod Itself
 
