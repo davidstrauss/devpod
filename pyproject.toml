@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "devpod"
+version = "0.1.0"
+description = ""
+authors = ["David Strauss <david@davidstrauss.net>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+click = "^7.1.2"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[tool.poetry.scripts]
+devpod = 'devpod.console:cli'
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+

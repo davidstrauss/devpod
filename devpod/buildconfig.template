@@ -1,0 +1,11 @@
+[default]
+name=Default
+runtime=podman:${containerid}
+toolchain=default
+config-opts=
+run-opts=
+prefix=${homedir}/.var/app/org.gnome.Builder/cache/gnome-builder/install/${project}/podman:${containerid}
+app-id=
+postbuild=
+prebuild=
+default=true
