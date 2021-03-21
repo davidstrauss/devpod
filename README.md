@@ -14,7 +14,7 @@ other IDE integrations.
 
 ### Usage
 
-1. In the CLI, change to the parent directory of `.devcontainer`.
+1. In the CLI, change to the parent directory of `.devcontainer` for your project.
 1. Run the utility (which will *delete* any container with the same name as your project directory):
 
        devpod build
