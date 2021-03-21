@@ -30,17 +30,20 @@ other IDE integrations.
 1. Connect using a Web browser. For example, if the output of `port` is
    `80/tcp -> 0.0.0.0:12345`, then open a browser to `http://localhost:12345/`.
 
-## Developing of DevPod Itself
+## Developing DevPod Itself
 
 ### Installing the CLI Tool from Local Builds
+
+**These instructions have been tested on Fedora Silverblue 33 but are probably
+adaptable to other setups.**
 
 1. Install Python package tooling (using a [Toolbox](https://docs.fedoraproject.org/en-US/fedora-silverblue/toolbox/) if desired):
 
        sudo dnf install poetry pipx
 
-1. Clone this project's code and make it your working directory.
-1. Build and install for global use:
-       
+1. Clone the DevPod code and make it your working directory.
+1. Build and install the utility for global use:
+
        poetry build
        pipx install install dist/devpod-$VERSION.tar.gz
 
