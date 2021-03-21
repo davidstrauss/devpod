@@ -1,4 +1,4 @@
-# DevPod, A FOSS .devcontainer
+# DevPod: Rootless, FOSS .DevContainer Tooling
 
 A support framework for using `.devcontainer` on Linux desktops. Let's start
 with Buildah + Podman + Builder, but the project is open to contributions for
