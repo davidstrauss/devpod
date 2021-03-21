@@ -3,6 +3,9 @@ name = "devpod"
 version = "0.1.0"
 description = ""
 authors = ["David Strauss <david@davidstrauss.net>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/davidstrauss/devpod"
 
 [tool.poetry.dependencies]
 python = "^3.9"

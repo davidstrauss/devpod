@@ -8,7 +8,6 @@ import sys
 import configparser
 import click
 
-
 def init_logger():
     # From https://stackoverflow.com/a/46065766
     logger = logging.getLogger()
@@ -21,7 +20,11 @@ def init_logger():
 
 def run(cmd, logger):
     logger.info("Command: {}".format(cmd))
-    cproc = subprocess.run(cmd, check=True, capture_output=True)
+    try:
+        cproc = subprocess.run(cmd, check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        print("Non-zero return code {}: {}".format(e.returncode, e.stderr.decode("utf-8")))
+        exit(1)
     output = cproc.stdout.strip()
     logger.info("Output: {}".format(output))
     return output
@@ -30,11 +33,11 @@ def run(cmd, logger):
 @click.group()
 @click.option("--debug/--no-debug", default=False)
 def cli(debug):
-    click.echo("Debug mode is {}".format("on" if debug else "off"))
+    click.echo("Debug mode is {} (with no effect yet)".format("on" if debug else "off"))
 
 
 @cli.command()
-def build():
+def launch():
     logger = init_logger()
 
     # Establish basic configuration.
@@ -69,10 +72,24 @@ def build():
 
     run(["podman", "stop", "--ignore", project_name], logger)
     run(["podman", "rm", "--ignore", project_name], logger)
+    
+    # @TODO: Consider adding the :U option to --volume once supported in releases of Podman.
     run(
-        ["podman", "run", "-P", "-d", "--name={}".format(project_name), image_id],
+        ["podman", "run", "-P", "-d", "--volume={}:/workspace:z".format(project_path), "--name={}".format(project_name), image_id],
         logger,
     )
+
+    # This should show the current workspace from the container.
+    #run(["podman", "exec", "--workdir=/workspace", project_name, "/bin/ls", "-l", "/workspace"], logger)
+    run(["podman", "exec", "--workdir=/workspace", project_name, "/bin/sh", "-c", "/bin/ls -l /workspace"], logger)
+
+    container_shell = "/bin/sh"
+    # Prefer the specified shell, or fall back to /bin/sh?
+    #if "settings" in devc_config and "terminal.integrated.shell.linux" in devc_config["settings"]:
+    #    container_shell = devc_config["settings"]["terminal.integrated.shell.linux"]
+
+    if "postCreateCommand" in devc_config:
+        run(["podman", "exec", "--workdir=/workspace", project_name, container_shell, "-c", devc_config["postCreateCommand"]], logger)
 
     bldcfg = buildconfig_tpl.substitute(
         containerid=project_name, homedir=pathlib.Path.home(), project=project_name
