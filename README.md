@@ -8,12 +8,15 @@ other IDE integrations.
 
 ### Setup
 
+**These instructions should work out of the box on Fedora Silverblue 33+.** 
+
 1. Install GNOME Builder (example uses Flatpak, but a normal package works, too):
 
        flatpak install flathub org.gnome.Builder
 
-1. This project isn't yet on PyPI, so follow the "local builds" instructions
-   under "developing."
+1. Install this utility (choosing an alternative to `pip` like `pipx` if you like):
+
+       pip install devpod
 
 ### Usage
 
@@ -34,8 +37,7 @@ other IDE integrations.
 
 ### Installing the CLI Tool from Local Builds
 
-**These instructions have been tested on Fedora Silverblue 33 but are probably
-adaptable to other setups.**
+**These instructions have been tested on Fedora Silverblue 33 but are probably adaptable to other setups.**
 
 1. Install Python package tooling (using a [Toolbox](https://docs.fedoraproject.org/en-US/fedora-silverblue/toolbox/) if desired):
 
