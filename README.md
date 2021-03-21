@@ -42,10 +42,9 @@ adaptable to other setups.**
        sudo dnf install poetry pipx
 
 1. Clone the DevPod code and make it your working directory.
-1. Build and install the utility for global use:
+1. Build and (re)install the utility for global use:
 
-       poetry build
-       pipx install install dist/devpod-$VERSION.tar.gz
+       rm -rf dist/ && poetry build && pipx install --force dist/devpod-*.tar.gz
 
 1. The `devpod` command should now be globally available to your user, even
    outside of any Toolbox.
