@@ -4,15 +4,39 @@ A support framework for using `.devcontainer` on Linux desktops. Let's start
 with Buildah + Podman + Builder, but the project is open to contributions for
 other IDE integrations.
 
+## Example Project
+
+**This example assumes a working Podman installation, which exists out of the box on [Fedora Silverblue](https://silverblue.fedoraproject.org/) but is also available on [many distributions and platforms](https://podman.io/getting-started/installation).**
+
+1. Install this utility:
+
+       pip install devpod
+
+1. Clone [Microsoft's PHP sample repository](https://github.com/microsoft/vscode-remote-try-php) and make it the working directory:
+
+       git clone https://github.com/microsoft/vscode-remote-try-php.git
+       cd vscode-remote-try-php/
+
+1. In `.devcontainer/devcontainer.json`, uncomment the `postCreateCommand` directive and ensure there's a comma at the end of the line [if not yet fixed](https://github.com/microsoft/vscode-remote-try-php/pull/9).
+
+    ![Uncomment postCreateCommand](https://github.com/davidstrauss/devpod/blob/main/screenshots/devcontainer_json.png?raw=true)
+
+1. Build the container and launch:
+
+       devpod run --launch
+
+    ![Building and launching the container](https://github.com/davidstrauss/devpod/blob/main/screenshots/devpod_run_launch.png?raw=true)
+
+1. Edit `index.php` in your IDE and reload the page in your Browser to see changes.
+
+    ![Showing index.php in the IDE](https://github.com/davidstrauss/devpod/blob/main/screenshots/index_php.png?raw=true)
+    ![Showing index.php in the browser](https://github.com/davidstrauss/devpod/blob/main/screenshots/browser.png?raw=true)
+
 ## Basic Setup and Usage
 
 ### Setup
 
 **These instructions should work out of the box on Fedora Silverblue 33+.** 
-
-1. Install GNOME Builder (example uses Flatpak, but a normal package works, too):
-
-       flatpak install flathub org.gnome.Builder
 
 1. Install this utility (choosing an alternative to `pip` like `pipx` if you like):
 
