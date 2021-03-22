@@ -22,6 +22,7 @@ def init_logger():
 
 
 def run_command(cmd, logger):
+    logger.debug("CWD: {}".format(os.getcwd()))
     logger.info("Command: {}".format(cmd))
     try:
         cproc = subprocess.run(cmd, check=True, capture_output=True)
@@ -30,7 +31,7 @@ def run_command(cmd, logger):
         print(
             "Non-zero return code {}: {}".format(e.returncode, e.stderr.decode("utf-8"))
         )
-        exit(1)
+        raise e
     output = cproc.stdout.strip()
     logger.debug("Output: {}".format(output))
     return output
@@ -59,7 +60,7 @@ def run(launch=False):
     project_name = pathlib.Path(project_path).name.strip()
     devc_dir = os.path.join(project_path, ".devcontainer")
 
-    # .devcontainer paths are all relative to the .devcontainer directory.
+    # .devcontainer paths on the client side all appear relative to the .devcontainer directory.
     os.chdir(devc_dir)
 
     # Determine .devcontainer configuration.
@@ -95,7 +96,7 @@ def run(launch=False):
         )
         compose_config = containercompose.get_config(devc_config["dockerComposeFile"], project_path, workspace_path, devc_config["service"])
         logger.debug("Modified YAML: {}".format(compose_config))
-        with tempfile.NamedTemporaryFile(mode="w+", prefix="container-compose-",suffix=".yml") as compose_config_fp:
+        with tempfile.NamedTemporaryFile(mode="w+", dir=devc_dir, prefix="container-compose-",suffix=".yml") as compose_config_fp:
             logger.debug("Modified YAML path: {}".format(compose_config_fp.name))
             yaml.dump(compose_config, compose_config_fp)
             compose_config_fp.flush()
@@ -140,6 +141,7 @@ def run(launch=False):
                 "-P",
                 "-d",
                 "--volume={}:{}:z".format(project_path, workspace_path),
+                "--volume={}:/devpodworkspace:z".format(project_path),
                 "--name={}".format(project_name),
                 image_id,
             ],
@@ -188,6 +190,7 @@ def run(launch=False):
         click.echo(
             "Running postCreateCommand: {}".format(devc_config["postCreateCommand"])
         )
+
         run_command(
             [
                 "podman",

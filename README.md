@@ -105,4 +105,4 @@ other IDE integrations.
 These are repositories currently used for interoperability testing.
 
 * [Basic project](https://github.com/microsoft/vscode-remote-try-php)
-* [Compose-based project](https://github.com/valenvb/vscode-devcontainer-wordpress)
+* [Compose-based project](https://github.com/microsoft/vscode-dev-containers/tree/master/containers/php-mariadb)
