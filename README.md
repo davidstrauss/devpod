@@ -82,3 +82,12 @@ other IDE integrations.
     * [Shortcomings of Rootless Podman](https://github.com/containers/podman/blob/master/rootless.md)
     * [Volumes and Rootless Podman](https://blog.christophersmart.com/2021/01/31/volumes-and-rootless-podman/)
     * [User Namespaces, SELinux, and Rootless Containers](https://www.redhat.com/sysadmin/user-namespaces-selinux-rootless-containers)
+* [From Docker Compose to Kubernetes with Podman](https://www.redhat.com/sysadmin/compose-kubernetes-podman)
+* [Podman Compose](https://github.com/containers/podman-compose)
+
+## Reference Repositories
+
+These are repositories currently used for interoperability testing.
+
+* [Basic project](https://github.com/microsoft/vscode-remote-try-php)
+* [Compose-based project](https://github.com/valenvb/vscode-devcontainer-wordpress)

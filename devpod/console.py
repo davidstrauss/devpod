@@ -63,41 +63,117 @@ def run(launch=False):
     devc_config_json = ""
     with open(devc_config_path, "r") as devc_config_fp:
         for line in devc_config_fp.readlines():
-            if not line.strip().startswith("//"):
-                devc_config_json += line + "\n"
+            parts = line.strip().split("//")  # @TODO: Switch to more robust method.
+            cleaned_data = parts[0].strip()
+            if cleaned_data:
+                devc_config_json += cleaned_data + "\n"
     devc_config = json.loads(devc_config_json)
 
-    # Build the new container.
-    container_build_filename = devc_config["build"]["dockerfile"]
-    container_build_path = os.path.join(devc_dir, container_build_filename)
-    click.echo("Building container: {}".format(project_name))
-    pb_output = run_command(
-        ["podman", "build", "-t", project_name, "-f", container_build_path, "."], logger
-    )  # --build-arg
-    image_id = pb_output.splitlines()[-1].decode("utf-8").strip()
+    workspace_path = "/workspace"
+    if "workspaceFolder" in devc_config:
+        workspace_path = devc_config["workspaceFolder"]
 
-    # Start running the new container.
-    click.echo(
-        "Running new container (replacing existing if present)...".format(project_name)
-    )
-    run_command(["podman", "stop", "--ignore", project_name], logger)
-    run_command(["podman", "rm", "--ignore", project_name], logger)
-    # @TODO: Consider adding the :U option to --volume once supported in releases of Podman.
-    run_command(
-        [
-            "podman",
-            "run",
-            "-P",
-            "-d",
-            "--volume={}:/workspace:z".format(project_path),
-            "--name={}".format(project_name),
-            image_id,
-        ],
-        logger,
-    )
+    composed = False
+    if "dockerComposeFile" in devc_config:
+        composed = True
+        # Start running the new pod.
+        click.echo(
+            "Removing existing pod if present: {}".format(project_name)
+        )
+        run_command(
+            [
+                "podman",
+                "pod",
+                "rm",
+                "--ignore",
+                "--force",
+                project_name
+            ],
+            logger,
+        )
+
+        click.echo(
+            "Building and running new pod: {}".format(project_name)
+        )
+        compose_file = os.path.join(devc_dir, devc_config["dockerComposeFile"])
+        run_command(
+            [
+                "podman-compose",
+                "-p",
+                project_name,
+                "--transform_policy=1podfw",
+                "--file={}".format(compose_file),
+                "up",
+                "--detach",
+            ],
+            logger,
+        )
+    else:
+        # @TODO: Skip this if the project specifies an image directly.
+        # Build the new container.
+        container_build_filename = devc_config["build"]["dockerfile"]
+        container_build_path = os.path.join(devc_dir, container_build_filename)
+        click.echo("Building container: {}".format(project_name))
+        pb_output = run_command(
+            ["podman", "build", "-t", project_name, "-f", container_build_path, "."], logger
+        )  # --build-arg
+        image_id = pb_output.splitlines()[-1].decode("utf-8").strip()
+
+        # Start running the new container.
+        click.echo(
+            "Running new container (replacing existing if present)...".format(project_name)
+        )
+        run_command(["podman", "stop", "--ignore", project_name], logger)
+        run_command(["podman", "rm", "--ignore", project_name], logger)
+        # @TODO: Consider adding the :U option to --volume once supported in releases of Podman.
+        run_command(
+            [
+                "podman",
+                "run",
+                "-P",
+                "-d",
+                "--volume={}:{}:z".format(project_path, workspace_path),
+                "--name={}".format(project_name),
+                image_id,
+            ],
+            logger,
+        )
 
     # Run post-creation commands.
     container_shell = "/bin/sh"
+    cmd_container_name = project_name  # @TODO: In Compose-based runs, figure out the correct container.
+
+    # If this is composed, match the workspaceFolder to mounts to determine the primary container.
+    if composed:
+        click.echo("Searching containers in pod for workspace directory: {}".format(workspace_path))
+        pod_data_json = run_command(
+            [
+                "podman",
+                "pod",
+                "inspect",
+                project_name
+            ],
+            logger,
+        )
+        pod_data = json.loads(pod_data_json)
+        for container_attr in pod_data["Containers"]:
+            container_name = container_attr["Name"]
+            container_data_json = run_command(
+                [
+                    "podman",
+                    "container",
+                    "inspect",
+                    container_name
+                ],
+                logger,
+            )
+            container_data = json.loads(container_data_json)
+            for mount_attr in container_data[0]["Mounts"]:
+                # @TODO: Compare these more robustly.
+                if mount_attr["Destination"] == workspace_path:
+                    cmd_container_name = container_name
+        click.echo("Found matching mount for primary workspace in container: {}".format(cmd_container_name))
+
     # Prefer the specified shell, or fall back to /bin/sh?
     # if "settings" in devc_config and "terminal.integrated.shell.linux" in devc_config["settings"]:
     #    container_shell = devc_config["settings"]["terminal.integrated.shell.linux"]
@@ -109,8 +185,8 @@ def run(launch=False):
             [
                 "podman",
                 "exec",
-                "--workdir=/workspace",
-                project_name,
+                "--workdir={}".format(workspace_path),
+                cmd_container_name,
                 container_shell,
                 "-c",
                 devc_config["postCreateCommand"],
@@ -118,7 +194,7 @@ def run(launch=False):
             logger,
         )
     else:
-        click.echo("No postCreateCommand found.")
+        click.echo("No postCreateCommand found. Working files are only in the bindmount location: {}".format(workspace_path))
 
     # Export Builder configuration.
     click.echo("Exporting GNOME Builder configuration: .buildconfig")
