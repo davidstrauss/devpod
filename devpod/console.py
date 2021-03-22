@@ -194,7 +194,7 @@ def run(launch=False):
             logger,
         )
     else:
-        click.echo("No postCreateCommand found. Working files are only in the bindmount location: {}".format(workspace_path))
+        click.echo("No postCreateCommand found. Project files are only in the bindmount location: {}".format(workspace_path))
 
     # Export Builder configuration.
     click.echo("Exporting GNOME Builder configuration: .buildconfig")
