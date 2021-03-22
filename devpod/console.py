@@ -88,7 +88,7 @@ def run(launch=False):
         click.echo(
             "Processing Container/Docker Compose file: {}".format(devc_config["dockerComposeFile"])
         )
-        compose_config = containercomposer.get_config(devc_config["dockerComposeFile"], project_path, workspace_path, devc_config["service"])
+        compose_config = containercompose.get_config(devc_config["dockerComposeFile"], project_path, workspace_path, devc_config["service"])
         compose_yaml = yaml.dump(compose_config)
         logger.debug("Modified YAML: {}".format(compose_yaml))
         with tempfile.NamedTemporaryFile(prefix="container-compose-",suffix=".yml") as compose_config_fp:
