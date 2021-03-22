@@ -7,6 +7,10 @@ import logging
 import sys
 import configparser
 import click
+import yaml
+
+import devcontainer
+import containercompose
 
 
 def init_logger():
@@ -32,7 +36,6 @@ def run_command(cmd, logger):
     logger.debug("Output: {}".format(output))
     return output
 
-
 @click.group()
 @click.option("--debug/--no-debug", default=False)
 def cli(debug):
@@ -45,7 +48,6 @@ def cli(debug):
 @click.option("--launch/--no-launch", default=False)
 def run(launch=False):
     logger = init_logger()
-
     # Establish script paths (relative to this script).
     base_path = os.path.dirname(os.path.realpath(__file__))
     buildconfig_tpl_path = os.path.join(base_path, "buildconfig.template")
@@ -56,18 +58,9 @@ def run(launch=False):
     project_path = os.getcwd()  # Make configurable?
     project_name = pathlib.Path(project_path).name.strip()
 
-    # Determine container configuration.
+    # Determine .devcontainer configuration.
     click.echo("Loading configuration for project directory: {}".format(project_path))
-    devc_dir = os.path.join(os.getcwd(), ".devcontainer")
-    devc_config_path = os.path.join(devc_dir, "devcontainer.json")
-    devc_config_json = ""
-    with open(devc_config_path, "r") as devc_config_fp:
-        for line in devc_config_fp.readlines():
-            parts = line.strip().split("//")  # @TODO: Switch to more robust method.
-            cleaned_data = parts[0].strip()
-            if cleaned_data:
-                devc_config_json += cleaned_data + "\n"
-    devc_config = json.loads(devc_config_json)
+    devc_config = devcontainer.get_config(base_path)
 
     workspace_path = "/workspace"
     if "workspaceFolder" in devc_config:
@@ -76,6 +69,7 @@ def run(launch=False):
     composed = False
     if "dockerComposeFile" in devc_config:
         composed = True
+
         # Start running the new pod.
         click.echo(
             "Removing existing pod if present: {}".format(project_name)
@@ -93,21 +87,31 @@ def run(launch=False):
         )
 
         click.echo(
-            "Building and running new pod: {}".format(project_name)
+            "Processing Container/Docker Compose file: {}".format(devc_config["dockerComposeFile"])
         )
-        compose_file = os.path.join(devc_dir, devc_config["dockerComposeFile"])
-        run_command(
-            [
-                "podman-compose",
-                "-p",
-                project_name,
-                "--transform_policy=1podfw",
-                "--file={}".format(compose_file),
-                "up",
-                "--detach",
-            ],
-            logger,
-        )
+        compose_config = containercomposer.get_config(devc_config["dockerComposeFile"], project_path, workspace_path, devc_config["service"])
+        compose_yaml = yaml.dump(compose_config)
+        logger.debug("Modified YAML: {}".format(compose_yaml))
+        with tempfile.NamedTemporaryFile(prefix="container-compose-",suffix=".yml") as compose_config_fp:
+            logger.debug("Modified YAML path: {}".format(compose_config_fp.name))
+            compose_config_fp.write(compose_yaml)
+            compose_config_fp.flush()
+            click.echo(
+                "Building and running new pod: {}".format(project_name)
+            )
+            compose_file = os.path.join(devc_dir, devc_config["dockerComposeFile"])
+            run_command(
+                [
+                    "podman-compose",
+                    "-p",
+                    project_name,
+                    "--transform_policy=1podfw",
+                    "--file={}".format(compose_config_fp.name),
+                    "up",
+                    "--detach",
+                ],
+                logger,
+            )
     else:
         # @TODO: Skip this if the project specifies an image directly.
         # Build the new container.

@@ -74,6 +74,21 @@ other IDE integrations.
 1. The `devpod` command should now be globally available to your user, even
    outside of any Toolbox.
 
+## Project Philosophy
+
+* Supplement -- don't interfere with -- people's existing development setups.
+    * Tread lightly. Things that work for users today shouldn't break.
+    * Exit gracefully. We shouldn't leave junk scattered on a user's system.
+* Build working glue before refined architecture.
+    * It's unclear how some things will best fit together until more features are integrated (and this entire space matures).
+* Only take on only a handful of mature runtime dependencies.
+    * Yes, there are many Python wrappers for container tools, but we will avoid additional layers that might be hard to debug.
+    * This space is moving so quickly that many wrappers aren't keeping up.
+    * It's convenient to have `devpod` installed at the user/system level, so let's drag along fewer dependencies (`pipx` notwithstanding).
+* Invest in compatibility over spec conformance and custom tests.
+    * Testing by automating standing up official example -- and some community -- repositories.
+    * Custom tests still make sense below the integration level.
+
 ## Resources
 
 * [.devcontainer Reference Documentation](https://code.visualstudio.com/docs/remote/devcontainerjson-reference)
