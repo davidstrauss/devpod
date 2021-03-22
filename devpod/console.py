@@ -8,6 +8,7 @@ import sys
 import configparser
 import click
 import yaml
+import tempfile
 
 from devpod import devcontainer, containercompose
 
@@ -37,6 +38,7 @@ def run_command(cmd, logger):
 @click.group()
 @click.option("--debug/--no-debug", default=False)
 def cli(debug):
+    logger = logging.getLogger()
     if debug:
         click.echo("Debug output on.")
         logger.setLevel(logging.DEBUG)
@@ -56,6 +58,9 @@ def run(launch=False):
     project_path = os.getcwd()  # Make configurable?
     project_name = pathlib.Path(project_path).name.strip()
     devc_dir = os.path.join(project_path, ".devcontainer")
+
+    # .devcontainer paths are all relative to the .devcontainer directory.
+    os.chdir(devc_dir)
 
     # Determine .devcontainer configuration.
     click.echo("Loading configuration for project directory: {}".format(project_path))
@@ -89,11 +94,10 @@ def run(launch=False):
             "Processing Container/Docker Compose file: {}".format(devc_config["dockerComposeFile"])
         )
         compose_config = containercompose.get_config(devc_config["dockerComposeFile"], project_path, workspace_path, devc_config["service"])
-        compose_yaml = yaml.dump(compose_config)
-        logger.debug("Modified YAML: {}".format(compose_yaml))
-        with tempfile.NamedTemporaryFile(prefix="container-compose-",suffix=".yml") as compose_config_fp:
+        logger.debug("Modified YAML: {}".format(compose_config))
+        with tempfile.NamedTemporaryFile(mode="w+", prefix="container-compose-",suffix=".yml") as compose_config_fp:
             logger.debug("Modified YAML path: {}".format(compose_config_fp.name))
-            compose_config_fp.write(compose_yaml)
+            yaml.dump(compose_config, compose_config_fp)
             compose_config_fp.flush()
             click.echo(
                 "Building and running new pod: {}".format(project_name)
@@ -144,7 +148,7 @@ def run(launch=False):
 
     # Run post-creation commands.
     container_shell = "/bin/sh"
-    cmd_container_name = project_name  # @TODO: In Compose-based runs, figure out the correct container.
+    cmd_container_name = project_name
 
     # If this is composed, match the workspaceFolder to mounts to determine the primary container.
     if composed:
@@ -188,7 +192,7 @@ def run(launch=False):
             [
                 "podman",
                 "exec",
-                "--workdir={}".format(workspace_path),
+                "--workdir=/devpodworkspace",
                 cmd_container_name,
                 container_shell,
                 "-c",
@@ -211,7 +215,7 @@ def run(launch=False):
 
     # List forwarded ports.
     ports = (
-        run_command(["podman", "port", project_name], logger).decode("utf-8").strip()
+        run_command(["podman", "port", cmd_container_name], logger).decode("utf-8").strip()
     )
     if len(ports) > 0:
         click.echo(
