@@ -9,9 +9,7 @@ import configparser
 import click
 import yaml
 
-import devcontainer
-import containercompose
-
+from devpod import devcontainer, containercompose
 
 def init_logger():
     # From https://stackoverflow.com/a/46065766
@@ -57,10 +55,11 @@ def run(launch=False):
     # Establish project paths (relative to working directory).
     project_path = os.getcwd()  # Make configurable?
     project_name = pathlib.Path(project_path).name.strip()
+    devc_dir = os.path.join(project_path, ".devcontainer")
 
     # Determine .devcontainer configuration.
     click.echo("Loading configuration for project directory: {}".format(project_path))
-    devc_config = devcontainer.get_config(base_path)
+    devc_config = devcontainer.get_config(devc_dir)
 
     workspace_path = "/workspace"
     if "workspaceFolder" in devc_config:
